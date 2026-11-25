@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מטרונום מקצועי + אימון קצב</title>
+    <title>מטרונום מקצועי + סנכרון תבניות</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -18,12 +18,7 @@
             --border-color: #333333;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
 
         body {
             background-color: var(--bg-color);
@@ -46,7 +41,19 @@
             text-align: center;
         }
 
-        /* אינדיקטור ויזואלי לפעימה */
+        .sync-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background-color: #262626;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            border: 1px solid var(--border-color);
+        }
+        .sync-badge.online { color: var(--primary); border-color: rgba(0, 230, 118, 0.3); }
+        .sync-badge.offline { color: var(--warning); border-color: rgba(255, 183, 77, 0.3); }
+
         .visual-beat-container {
             display: flex;
             justify-content: center;
@@ -64,397 +71,130 @@
             transition: transform 0.04s ease, background-color 0.04s ease;
         }
 
-        .beat-dot.active-main {
-            background-color: var(--accent);
-            transform: scale(1.4);
-            box-shadow: 0 0 12px var(--accent);
-        }
+        .beat-dot.active-main { background-color: var(--accent); transform: scale(1.4); box-shadow: 0 0 12px var(--accent); }
+        .beat-dot.active-sub { background-color: var(--primary); transform: scale(1.2); box-shadow: 0 0 10px var(--primary); }
 
-        .beat-dot.active-sub {
-            background-color: var(--primary);
-            transform: scale(1.2);
-            box-shadow: 0 0 10px var(--primary);
-        }
+        .bpm-display { margin-bottom: 16px; }
+        .bpm-value { font-size: 4rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+        .bpm-label { font-size: 0.9rem; color: var(--text-muted); letter-spacing: 2px; margin-top: 4px; }
 
-        /* תצוגת BPM */
-        .bpm-display {
-            margin-bottom: 16px;
-        }
-
-        .bpm-value {
-            font-size: 4rem;
-            font-weight: 800;
-            line-height: 1;
-            color: var(--text-main);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .bpm-label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            letter-spacing: 2px;
-            margin-top: 4px;
-        }
-
-        /* שליטה ב-BPM */
-        .bpm-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
+        .bpm-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
         .btn-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 1px solid var(--border-color);
-            background-color: #2a2a2a;
-            color: var(--text-main);
-            font-size: 1.4rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-            user-select: none;
+            width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-color);
+            background-color: #2a2a2a; color: var(--text-main); font-size: 1.4rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
+        .btn-circle:hover { background-color: #3a3a3a; }
+        input[type="range"] { flex: 1; accent-color: var(--primary); cursor: pointer; height: 6px; background: #333; border-radius: 4px; }
 
-        .btn-circle:hover {
-            background-color: #3a3a3a;
-        }
-
-        input[type="range"] {
-            flex: 1;
-            accent-color: var(--primary);
-            cursor: pointer;
-            height: 6px;
-            background: #333;
-            border-radius: 4px;
-        }
-
-        /* חלוקות קצב - Subdivisions */
-        .section-block {
-            margin-bottom: 22px;
-            text-align: right;
-        }
-
-        .section-title {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            display: block;
-            text-align: center;
-        }
+        .section-block { margin-bottom: 22px; }
+        .section-title { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; display: block; text-align: center; }
 
         .subdivision-group {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            background-color: var(--panel-bg);
-            padding: 6px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+            background-color: var(--panel-bg); padding: 6px; border-radius: 10px; border: 1px solid var(--border-color);
         }
-
         .sub-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            padding: 10px 2px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all 0.2s;
+            background: transparent; border: none; color: var(--text-muted); padding: 10px 2px;
+            border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem;
         }
+        .sub-btn.active { background-color: var(--primary); color: #000000; }
 
-        .sub-btn.active {
-            background-color: var(--primary);
-            color: #000000;
-        }
-
-        /* תבניות BPM שמורות - Presets */
         .presets-box {
-            background-color: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 22px;
+            background-color: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 12px; margin-bottom: 22px;
         }
-
-        .preset-input-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
+        .preset-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
         .preset-input {
-            flex: 1;
-            background-color: #252525;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 8px 10px;
-            color: var(--text-main);
-            font-size: 0.9rem;
-            text-align: center;
+            flex: 1; background-color: #252525; border: 1px solid var(--border-color);
+            border-radius: 6px; padding: 8px 10px; color: var(--text-main); font-size: 0.9rem; text-align: center;
         }
-
-        .preset-input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
         .btn-add-preset {
-            background-color: #2a2a2a;
-            border: 1px solid var(--border-color);
-            color: var(--primary);
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: background 0.2s;
+            background-color: #2a2a2a; border: 1px solid var(--border-color); color: var(--primary);
+            padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
         }
-
-        .btn-add-preset:hover {
-            background-color: #353535;
-        }
-
-        .presets-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-        }
-
+        .presets-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         .preset-chip {
-            display: inline-flex;
-            align-items: center;
-            background-color: #262626;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            overflow: hidden;
-            transition: border-color 0.2s;
+            display: inline-flex; align-items: center; background-color: #262626;
+            border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden;
         }
-
-        .preset-chip:hover {
-            border-color: var(--primary);
-        }
-
         .preset-apply-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-main);
-            padding: 6px 12px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
+            background: transparent; border: none; color: var(--text-main);
+            padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
         }
-
-        .preset-apply-btn:hover {
-            color: var(--primary);
-        }
-
+        .preset-apply-btn:hover { color: var(--primary); }
         .preset-del-btn {
-            background: transparent;
-            border: none;
-            border-right: 1px solid var(--border-color);
-            color: var(--text-muted);
-            padding: 6px 8px;
-            font-size: 0.8rem;
-            cursor: pointer;
+            background: transparent; border: none; border-right: 1px solid var(--border-color);
+            color: var(--text-muted); padding: 6px 8px; font-size: 0.8rem; cursor: pointer;
         }
+        .preset-del-btn:hover { color: var(--accent); }
 
-        .preset-del-btn:hover {
-            color: var(--accent);
-            background-color: rgba(255, 82, 82, 0.1);
-        }
-
-        /* אימון העלאת מהירות אוטומטי - Speed Trainer */
         .trainer-box {
-            background-color: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 22px;
-            text-align: right;
+            background-color: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 12px 14px; margin-bottom: 22px; text-align: right;
         }
-
-        .trainer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .trainer-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .trainer-desc {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
+        .trainer-header { display: flex; justify-content: space-between; align-items: center; }
+        .trainer-title { font-size: 0.9rem; font-weight: 600; }
+        .trainer-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
         .trainer-status {
-            margin-top: 10px;
-            padding-top: 8px;
-            border-top: 1px dashed var(--border-color);
-            font-size: 0.85rem;
-            color: var(--warning);
-            display: none;
-            justify-content: space-between;
-            align-items: center;
+            margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color);
+            font-size: 0.85rem; color: var(--warning); display: none; justify-content: space-between;
         }
+        .trainer-status.visible { display: flex; }
 
-        .trainer-status.visible {
-            display: flex;
-        }
-
-        /* מתג הפעלה (Toggle Switch) */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
         .slider-toggle {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #333;
-            transition: .3s;
-            border-radius: 24px;
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333; transition: .3s; border-radius: 24px;
         }
-
         .slider-toggle:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%;
         }
+        input:checked + .slider-toggle { background-color: var(--primary); }
+        input:checked + .slider-toggle:before { transform: translateX(20px); background-color: #000; }
 
-        input:checked + .slider-toggle {
-            background-color: var(--primary);
-        }
-
-        input:checked + .slider-toggle:before {
-            transform: translateX(20px);
-            background-color: #000;
-        }
-
-        /* כפתור הפעלה ראשי */
         .play-btn {
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            border: none;
-            background-color: var(--primary);
-            color: #000000;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            margin-bottom: 22px;
+            width: 100%; padding: 16px; border-radius: 12px; border: none; background-color: var(--primary);
+            color: #000000; font-size: 1.2rem; font-weight: 700; cursor: pointer; margin-bottom: 22px;
         }
+        .play-btn.playing { background-color: var(--accent); color: #ffffff; }
 
-        .play-btn:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .play-btn:active {
-            transform: scale(0.98);
-        }
-
-        .play-btn.playing {
-            background-color: var(--accent);
-            color: #ffffff;
-        }
-
-        /* שעון עצר - Stopwatch */
         .timer-section {
-            border-top: 1px solid var(--border-color);
-            padding-top: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-top: 1px solid var(--border-color); padding-top: 18px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-
-        .timer-info {
-            text-align: right;
-        }
-
-        .timer-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            display: block;
-        }
-
-        .timer-display {
-            font-size: 1.5rem;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-            color: var(--text-main);
-        }
-
-        .timer-actions {
-            display: flex;
-            gap: 8px;
-        }
-
+        .timer-info { text-align: right; }
+        .timer-label { font-size: 0.8rem; color: var(--text-muted); display: block; }
+        .timer-display { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .timer-actions { display: flex; gap: 8px; }
         .btn-small {
-            background-color: #2a2a2a;
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-small:hover {
-            background-color: #3a3a3a;
+            background-color: #2a2a2a; border: 1px solid var(--border-color); color: var(--text-main);
+            padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
 <div class="metronome-card">
-    <!-- תצוגה ויזואלית של החלוקות -->
+    <div id="sync-status" class="sync-badge">בודק חיבור...</div>
+
     <div class="visual-beat-container" id="visual-container">
         <div class="beat-dot" id="dot-0"></div>
     </div>
 
-    <!-- תצוגת BPM -->
     <div class="bpm-display">
         <div class="bpm-value" id="bpm-val">120</div>
         <div class="bpm-label">BPM</div>
     </div>
 
-    <!-- שליטה במהירות -->
     <div class="bpm-controls">
-        <button class="btn-circle" id="bpm-down" title="הורד BPM">-</button>
+        <button class="btn-circle" id="bpm-down">-</button>
         <input type="range" id="bpm-slider" min="30" max="260" value="120">
-        <button class="btn-circle" id="bpm-up" title="העלה BPM">+</button>
+        <button class="btn-circle" id="bpm-up">+</button>
     </div>
 
-    <!-- בחירת חלוקת קצב -->
     <div class="section-block">
         <span class="section-title">חלוקת פעימה (Subdivision)</span>
         <div class="subdivision-group">
@@ -465,9 +205,8 @@
         </div>
     </div>
 
-    <!-- תבניות מהירות - Presets -->
     <div class="presets-box">
-        <span class="section-title" style="margin-bottom: 8px;">תבניות מהירות (Presets)</span>
+        <span class="section-title" style="margin-bottom: 8px;">תבניות מהירות מסונכרנות</span>
         <div class="preset-input-row">
             <input type="number" id="preset-bpm-input" class="preset-input" placeholder="הזן BPM (למשל 56)" min="30" max="260">
             <button class="btn-add-preset" id="add-preset-btn">+ שמור תבנית</button>
@@ -475,7 +214,6 @@
         <div class="presets-list" id="presets-list"></div>
     </div>
 
-    <!-- אימון העלאת קצב אוטומטית - Speed Trainer -->
     <div class="trainer-box">
         <div class="trainer-header">
             <div>
@@ -493,10 +231,8 @@
         </div>
     </div>
 
-    <!-- כפתור התחלה / עצירה -->
     <button class="play-btn" id="play-toggle">התחל ניגון</button>
 
-    <!-- שעון עצר לזמן אימון -->
     <div class="timer-section">
         <div class="timer-info">
             <span class="timer-label">זמן אימון מצטבר</span>
@@ -509,21 +245,21 @@
     </div>
 </div>
 
-<script>
-    // משתני שמע ותזמון - Web Audio API
+<script type="module">
+    import { savePresets, subscribeToPresets, getLocalPresets } from './presets-sync.mjs';
+
     let audioCtx = null;
     let isPlaying = false;
     let bpm = 120;
-    let subdivision = 1; // 1 = רבעים, 2 = שמיניות, 4 = שש-עשריות, 8 = 32-יות
+    let subdivision = 1;
     let currentSubStep = 0;
     let nextNoteTime = 0.0;
     let timerID = null;
 
-    // הגדרות Lookahead לתזמון מדויק ברמת החומרה
-    const lookahead = 25.0; // תדירות בדיקה במילישניות
-    const scheduleAheadTime = 0.1; // כמה זמן קדימה לתזמן בשניות
+    const lookahead = 25.0;
+    const scheduleAheadTime = 0.1;
 
-    // אלמנטים מה-DOM
+    const syncStatusEl = document.getElementById('sync-status');
     const bpmValDisplay = document.getElementById('bpm-val');
     const bpmSlider = document.getElementById('bpm-slider');
     const bpmDownBtn = document.getElementById('bpm-down');
@@ -532,22 +268,18 @@
     const playToggleBtn = document.getElementById('play-toggle');
     const visualContainer = document.getElementById('visual-container');
 
-    // משתני תבניות (Presets)
     const presetInput = document.getElementById('preset-bpm-input');
     const addPresetBtn = document.getElementById('add-preset-btn');
     const presetsList = document.getElementById('presets-list');
-    // טעינת תבניות שמורות או ברירת מחדל הכוללת 56 BPM
-    let savedPresets = JSON.parse(localStorage.getItem('metronome_presets')) || [56, 80, 100, 120];
+    let currentPresets = getLocalPresets();
 
-    // משתני אימון קצב מדורג (Speed Trainer)
     const trainerToggle = document.getElementById('trainer-toggle');
     const trainerStatus = document.getElementById('trainer-status');
     const trainerBeatCounter = document.getElementById('trainer-beat-counter');
     let isTrainerActive = false;
     let mainBeatsCompleted = 0;
-    const BEATS_PER_INCREMENT = 8; // כל 8 רבעים (2 תיבות של 4/4)
+    const BEATS_PER_INCREMENT = 8;
 
-    // משתני שעון עצר
     const stopwatchDisplay = document.getElementById('stopwatch');
     const timerToggleBtn = document.getElementById('timer-toggle');
     const timerResetBtn = document.getElementById('timer-reset');
@@ -555,21 +287,31 @@
     let stopwatchInterval = null;
     let isStopwatchRunning = false;
 
-    // --- ניהול תבניות (Presets) ---
-    function savePresetsToStorage() {
-        localStorage.setItem('metronome_presets', JSON.stringify(savedPresets));
+    // חיווי מצב רשת (אופליין / אונליין)
+    function updateNetworkBadge() {
+        if (navigator.onLine) {
+            syncStatusEl.textContent = '● מחובר (מסונכרן)';
+            syncStatusEl.className = 'sync-badge online';
+        } else {
+            syncStatusEl.textContent = '● מצב אופליין (שומר מקומית)';
+            syncStatusEl.className = 'sync-badge offline';
+        }
     }
+    window.addEventListener('online', updateNetworkBadge);
+    window.addEventListener('offline', updateNetworkBadge);
+    updateNetworkBadge();
 
-    function renderPresets() {
+    // רינדור תבניות
+    function renderPresets(presets) {
+        currentPresets = presets;
         presetsList.innerHTML = '';
-        savedPresets.sort((a, b) => a - b).forEach(presetBpm => {
+        [...presets].sort((a, b) => a - b).forEach(presetBpm => {
             const chip = document.createElement('div');
             chip.className = 'preset-chip';
 
             const applyBtn = document.createElement('button');
             applyBtn.className = 'preset-apply-btn';
             applyBtn.textContent = `${presetBpm} BPM`;
-            applyBtn.title = 'לחץ למעבר מיידי למהירות זו';
             applyBtn.addEventListener('click', () => {
                 setBPM(presetBpm);
                 mainBeatsCompleted = 0;
@@ -579,11 +321,10 @@
             const delBtn = document.createElement('button');
             delBtn.className = 'preset-del-btn';
             delBtn.textContent = '✕';
-            delBtn.title = 'מחק תבנית';
-            delBtn.addEventListener('click', () => {
-                savedPresets = savedPresets.filter(item => item !== presetBpm);
-                savePresetsToStorage();
-                renderPresets();
+            delBtn.addEventListener('click', async () => {
+                const updated = currentPresets.filter(item => item !== presetBpm);
+                const saved = await savePresets(updated);
+                renderPresets(saved);
             });
 
             chip.appendChild(applyBtn);
@@ -592,25 +333,25 @@
         });
     }
 
-    addPresetBtn.addEventListener('click', () => {
+    // האזנה לסנכרון חי
+    subscribeToPresets((updatedPresets) => {
+        renderPresets(updatedPresets);
+    });
+
+    addPresetBtn.addEventListener('click', async () => {
         const val = parseInt(presetInput.value);
         if (!isNaN(val) && val >= 30 && val <= 260) {
-            if (!savedPresets.includes(val)) {
-                savedPresets.push(val);
-                savePresetsToStorage();
-                renderPresets();
-            }
+            const updated = [...currentPresets, val];
+            const saved = await savePresets(updated);
+            renderPresets(saved);
             presetInput.value = '';
         }
     });
 
     presetInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            addPresetBtn.click();
-        }
+        if (e.key === 'Enter') addPresetBtn.click();
     });
 
-    // --- ניהול אימון קצב מדורג (Speed Trainer) ---
     function updateTrainerUI() {
         trainerBeatCounter.textContent = `${mainBeatsCompleted} / ${BEATS_PER_INCREMENT} רבעים`;
     }
@@ -618,15 +359,10 @@
     trainerToggle.addEventListener('change', (e) => {
         isTrainerActive = e.target.checked;
         mainBeatsCompleted = 0;
-        if (isTrainerActive) {
-            trainerStatus.classList.add('visible');
-            updateTrainerUI();
-        } else {
-            trainerStatus.classList.remove('visible');
-        }
+        trainerStatus.classList.toggle('visible', isTrainerActive);
+        if (isTrainerActive) updateTrainerUI();
     });
 
-    // --- ניהול חיווי ויזואלי ---
     function renderVisualDots() {
         visualContainer.innerHTML = '';
         for (let i = 0; i < subdivision; i++) {
@@ -638,60 +374,36 @@
     }
 
     function updateVisualIndicator(step) {
-        const dots = document.querySelectorAll('.beat-dot');
-        dots.forEach(d => {
-            d.classList.remove('active-main', 'active-sub');
-        });
-
+        document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('active-main', 'active-sub'));
         const activeDot = document.getElementById(`dot-${step}`);
-        if (activeDot) {
-            if (step === 0) {
-                activeDot.classList.add('active-main');
-            } else {
-                activeDot.classList.add('active-sub');
-            }
-        }
+        if (activeDot) activeDot.classList.add(step === 0 ? 'active-main' : 'active-sub');
     }
 
-    // --- מנוע שמע (Web Audio API) ---
     function playClick(time, isMainBeat) {
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-
         osc.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-
         osc.frequency.value = isMainBeat ? 1000 : 650;
-        
-        // מעטפת קצרה במיוחד (25ms) כדי שגם 32-יות במהירות גבוהה יישמעו חדות וברורות
         gainNode.gain.setValueAtTime(1, time);
         gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
-
         osc.start(time);
         osc.stop(time + 0.025);
     }
 
     function nextNote() {
         const secondsPerBeat = 60.0 / bpm;
-        const secondsPerSubdivision = secondsPerBeat / subdivision;
-        nextNoteTime += secondsPerSubdivision;
-
-        currentSubStep++;
-        if (currentSubStep >= subdivision) {
-            currentSubStep = 0;
-        }
+        nextNoteTime += (secondsPerBeat / subdivision);
+        currentSubStep = (currentSubStep + 1) % subdivision;
     }
 
     function scheduleNote(stepNumber, time) {
         const isMainBeat = (stepNumber === 0);
         playClick(time, isMainBeat);
-
         const delay = (time - audioCtx.currentTime) * 1000;
         setTimeout(() => {
             if (!isPlaying) return;
             updateVisualIndicator(stepNumber);
-
-            // בדיקת התקדמות באימון קצב מדורג בכל פעימת רבע (Main Beat)
             if (isMainBeat && isTrainerActive) {
                 mainBeatsCompleted++;
                 if (mainBeatsCompleted >= BEATS_PER_INCREMENT) {
@@ -712,14 +424,8 @@
     }
 
     function toggleMetronome() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         isPlaying = !isPlaying;
 
         if (isPlaying) {
@@ -730,17 +436,12 @@
             scheduler();
             playToggleBtn.textContent = 'עצור';
             playToggleBtn.classList.add('playing');
-            
-            if (!isStopwatchRunning) {
-                startStopwatch();
-            }
+            if (!isStopwatchRunning) startStopwatch();
         } else {
             clearTimeout(timerID);
             playToggleBtn.textContent = 'התחל ניגון';
             playToggleBtn.classList.remove('playing');
-            document.querySelectorAll('.beat-dot').forEach(d => {
-                d.classList.remove('active-main', 'active-sub');
-            });
+            document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('active-main', 'active-sub'));
             stopStopwatch();
         }
     }
@@ -751,7 +452,6 @@
         bpmSlider.value = bpm;
     }
 
-    // מאזינים
     bpmSlider.addEventListener('input', (e) => setBPM(parseInt(e.target.value)));
     bpmDownBtn.addEventListener('click', () => setBPM(bpm - 1));
     bpmUpBtn.addEventListener('click', () => setBPM(bpm + 1));
@@ -768,14 +468,11 @@
 
     playToggleBtn.addEventListener('click', toggleMetronome);
 
-    // --- שעון עצר (Stopwatch) ---
     function formatTime(totalSeconds) {
         const hrs = Math.floor(totalSeconds / 3600);
         const mins = Math.floor((totalSeconds % 3600) / 60);
         const secs = totalSeconds % 60;
-        return [hrs, mins, secs]
-            .map(v => v < 10 ? "0" + v : v)
-            .join(":");
+        return [hrs, mins, secs].map(v => v < 10 ? "0" + v : v).join(":");
     }
 
     function startStopwatch() {
@@ -794,14 +491,7 @@
         clearInterval(stopwatchInterval);
     }
 
-    timerToggleBtn.addEventListener('click', () => {
-        if (isStopwatchRunning) {
-            stopStopwatch();
-        } else {
-            startStopwatch();
-        }
-    });
-
+    timerToggleBtn.addEventListener('click', () => isStopwatchRunning ? stopStopwatch() : startStopwatch());
     timerResetBtn.addEventListener('click', () => {
         stopStopwatch();
         elapsedSeconds = 0;
@@ -816,10 +506,7 @@
         }
     });
 
-    // אתחול ראשוני
     renderVisualDots();
-    renderPresets();
 </script>
-
 </body>
 </html>
