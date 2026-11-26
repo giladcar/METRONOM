@@ -8,38 +8,30 @@ import {
     enableIndexedDbPersistence 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// הדבק כאן את פרטי הפרויקט שלך מ-Firebase Console
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyA94tVR-NSTjRu6ntoCP__g6x9fsW2axPA",
+    authDomain: "cofee-admin.firebaseapp.com",
+    projectId: "cofee-admin",
+    storageBucket: "cofee-admin.firebasestorage.app",
+    messagingSenderId: "672467184010",
+    appId: "1:672467184010:web:f355b216f92da2021b0073",
+    measurementId: "G-L65F87QE18"
 };
 
 const STORAGE_KEY = 'metronome_presets_v3';
 const DEFAULT_PRESETS = [56, 80, 100, 120];
 
-let db = null;
-let presetDocRef = null;
-let isCloudConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// אתחול Firebase רק אם הוזנו מפתחות אמיתיים
-if (isCloudConfigured) {
-    try {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        // הפעלת שמירת מטמון אופליין מובנית של Firestore
-        enableIndexedDbPersistence(db).catch(() => {});
-        presetDocRef = doc(db, "metronome", "shared_presets");
-    } catch (e) {
-        console.warn("Firebase init failed, running in local-only mode:", e);
-        isCloudConfigured = false;
-    }
-}
+// הפעלת מטמון אופליין מובנה של Firestore
+enableIndexedDbPersistence(db).catch((err) => {
+    console.warn("Offline persistence note:", err.code);
+});
 
-// קריאת תבניות מקומיות (עובד תמיד גם אופליין)
+const presetDocRef = doc(db, "metronome", "shared_presets");
+
+// קריאת תבניות מקומיות (עובד מיידית גם אופליין)
 export function getLocalPresets() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -49,7 +41,7 @@ export function getLocalPresets() {
     }
 }
 
-// שמירת תבניות מקומית + דחיפה לענן ברגע שיש אינטרנט
+// שמירת תבניות מקומית + סנכרון לענן
 export async function savePresets(presetsArray) {
     const cleanArray = [...new Set(presetsArray)].sort((a, b) => a - b);
     
@@ -60,33 +52,30 @@ export async function savePresets(presetsArray) {
         console.error("Local storage error:", e);
     }
 
-    // 2. סנכרון לענן (אם מוגדר ומחובר - Firestore ימתין אוטומטית לחיבור אם כרגע אופליין)
-    if (isCloudConfigured && presetDocRef) {
-        try {
-            await setDoc(presetDocRef, { 
-                presets: cleanArray, 
-                updatedAt: Date.now() 
-            });
-        } catch (e) {
-            console.warn("Offline - will sync when back online:", e);
-        }
+    // 2. דחיפה לענן (Firestore יסנכרן אוטומטית ברגע שיש חיבור לרשת)
+    try {
+        await setDoc(presetDocRef, { 
+            presets: cleanArray, 
+            updatedAt: Date.now() 
+        });
+    } catch (e) {
+        console.warn("Saved locally; will sync to cloud when online:", e);
     }
+    
     return cleanArray;
 }
 
-// האזנה בזמן אמת לשינויים מדפדפנים או משתמשים אחרים
+// האזנה בזמן אמת לשינויים מכל דפדפן או מכשיר
 export function subscribeToPresets(onUpdateCallback) {
-    // טעינה ראשונית מהזיכרון המקומי
     onUpdateCallback(getLocalPresets());
 
-    // אם הענן מוגדר, האזן לעדכונים חיים מכל מכשיר/דפדפן
-    if (isCloudConfigured && presetDocRef) {
-        onSnapshot(presetDocRef, (docSnap) => {
-            if (docSnap.exists() && Array.isArray(docSnap.data().presets)) {
-                const cloudPresets = docSnap.data().presets;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudPresets));
-                onUpdateCallback(cloudPresets);
-            }
-        });
-    }
+    onSnapshot(presetDocRef, (docSnap) => {
+        if (docSnap.exists() && Array.isArray(docSnap.data().presets)) {
+            const cloudPresets = docSnap.data().presets;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudPresets));
+            onUpdateCallback(cloudPresets);
+        }
+    }, (error) => {
+        console.error("Firestore sync error (check Rules):", error);
+    });
 }
